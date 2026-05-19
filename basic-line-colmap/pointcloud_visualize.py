@@ -6,13 +6,12 @@ from pathlib import Path
 import numpy as np
 
 
-def load_points(path, color_field=None, use_rgb=False):
+def load_points(path, color_field=None):
     xs = []
     ys = []
     zs = []
     errors = []
     colors = []
-    rgbs = []
     with open(path, "r", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
@@ -22,21 +21,12 @@ def load_points(path, color_field=None, use_rgb=False):
             errors.append(float(row.get("avg_error", 0.0)))
             if color_field:
                 colors.append(float(row.get(color_field, 0.0)))
-            if use_rgb:
-                try:
-                    r = float(row["r"])
-                    g = float(row["g"])
-                    b = float(row["b"])
-                except KeyError as exc:
-                    raise SystemExit("CSV missing r,g,b columns") from exc
-                rgbs.append([r, g, b])
     return (
         np.array(xs),
         np.array(ys),
         np.array(zs),
         np.array(errors),
         np.array(colors) if color_field else None,
-        np.array(rgbs) if use_rgb else None,
     )
 
 
@@ -91,7 +81,6 @@ def main():
     parser.add_argument("--sample", type=int, default=None, help="Randomly sample N points")
     parser.add_argument("--color-by-error", action="store_true", help="Color points by avg_error")
     parser.add_argument("--color-field", default=None, help="Column to color by")
-    parser.add_argument("--color-rgb", action="store_true", help="Color points by r,g,b columns")
     parser.add_argument("--color-label", default=None, help="Label for colorbar")
     parser.add_argument("--output", default=None, help="Save plot to PNG")
     parser.add_argument("--show", action="store_true", help="Show interactive window")
@@ -119,15 +108,10 @@ def main():
     parser.add_argument("--azim", type=float, default=None, help="Initial azimuth angle")
     args = parser.parse_args()
 
-    if args.color_rgb and (args.color_by_error or args.color_field):
-        raise SystemExit("Use either --color-rgb or --color-by-error/--color-field")
-
     color_field = args.color_field
     if args.color_by_error:
         color_field = "avg_error"
-    xs, ys, zs, errors, colors, rgbs = load_points(
-        args.input, color_field, use_rgb=args.color_rgb
-    )
+    xs, ys, zs, errors, colors = load_points(args.input, color_field)
 
     if xs.size == 0:
         raise SystemExit("No points found in CSV")
@@ -140,8 +124,6 @@ def main():
     xs, ys, zs, errors = xs[mask], ys[mask], zs[mask], errors[mask]
     if colors is not None:
         colors = colors[mask]
-    if rgbs is not None:
-        rgbs = rgbs[mask]
 
     if args.sample is not None and args.sample < xs.size:
         rng = np.random.default_rng(42)
@@ -149,8 +131,6 @@ def main():
         xs, ys, zs, errors = xs[idx], ys[idx], zs[idx], errors[idx]
         if colors is not None:
             colors = colors[idx]
-        if rgbs is not None:
-            rgbs = rgbs[idx]
 
     try:
         import matplotlib.pyplot as plt
@@ -162,13 +142,7 @@ def main():
     fig = plt.figure(figsize=args.figsize, dpi=args.dpi)
     ax = fig.add_subplot(111, projection="3d")
 
-    if rgbs is not None:
-        rgb_max = float(np.nanmax(rgbs)) if rgbs.size else 1.0
-        if rgb_max > 1.0:
-            rgbs = rgbs / 255.0
-        rgbs = np.clip(rgbs, 0.0, 1.0)
-        ax.scatter(xs, ys, zs, c=rgbs, s=args.point_size, alpha=0.9)
-    elif colors is not None:
+    if colors is not None:
         scatter = ax.scatter(
             xs, ys, zs, c=colors, s=args.point_size, cmap="viridis", alpha=0.9
         )

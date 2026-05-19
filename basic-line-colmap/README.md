@@ -50,7 +50,7 @@ colmap -h
 Box:
 
 ```bash
-python pointcloud_run.py \
+python3 pointcloud_run.py \
   --camera-input TestImages/Box/boxInput.txt \
   --images-dir TestImages/Box \
   --output-csv auto_points.csv \
@@ -61,30 +61,13 @@ python pointcloud_run.py \
 Entrance with higher density:
 
 ```bash
-python pointcloud_run.py \
+python3 pointcloud_run.py \
   --camera-input TestImages/Entrance/entranceInput.txt \
   --images-dir TestImages/Entrance \
   --output-csv entrance_points.csv \
   --output-dir plots \
   --viz-color-by-error \
   --detail 5
-```
-
-Entrance AutoV2 (dense stereo):
-
-```bash
-python pointcloud_run.py \
-  --mode v2 \
-  --camera-input TestImages/Entrance/entranceInput.txt \
-  --images-dir TestImages/Entrance \
-  --output-csv entrance_v2_points.csv \
-  --output-dir plots \
-  --viz-color-field disparity \
-  --viz-color-label disparity \
-  --v2-clahe \
-  --v2-use-wls \
-  --v2-pair-window 1 \
-  --v2-stride 2
 ```
 
 The runner:
@@ -98,7 +81,7 @@ The runner:
 Use this when you want to verify a few points by hand.
 
 ```bash
-python pointcloud_manual.py \
+python3 pointcloud_manual.py \
   --box-input TestImages/Box/boxInput.txt \
   --images 1 2 3 \
   --points 4 \
@@ -110,7 +93,7 @@ python pointcloud_manual.py \
 This uses all detected images in the folder by default.
 
 ```bash
-python pointcloud_auto.py \
+python3 pointcloud_auto.py \
   --camera-input TestImages/Box/boxInput.txt \
   --images-dir TestImages/Box \
   --max-error 2.0 \
@@ -118,48 +101,14 @@ python pointcloud_auto.py \
   --output auto_points.csv
 ```
 
-## AutoV2 Dense Stereo (no visualization)
-
-```bash
-python pointcloud_auto_v2.py \
-  --camera-input TestImages/Entrance/entranceInput.txt \
-  --images-dir TestImages/Entrance \
-  --output entrance_v2_points.csv \
-  --pair-window 1 \
-  --stride 2 \
-  --clahe \
-  --use-wls
-```
-
 ## Visualize an existing CSV
 
 ```bash
-python pointcloud_visualize.py \
+python3 pointcloud_visualize.py \
   --input auto_points.csv \
   --color-by-error \
   --max-error 2.0 \
   --output plots/auto_points_plot.png \
-  --show
-```
-
-Color by a different column (AutoV2 writes `disparity`):
-
-```bash
-python pointcloud_visualize.py \
-  --input entrance_v2_points.csv \
-  --color-field disparity \
-  --color-label disparity \
-  --output plots/entrance_v2_plot.png \
-  --show
-```
-
-Color by per-point RGB values (if present):
-
-```bash
-python pointcloud_visualize.py \
-  --input auto_points.csv \
-  --color-rgb \
-  --output plots/auto_points_rgb.png \
   --show
 ```
 
@@ -179,14 +128,15 @@ for visualization in `pointcloud_visualize.py`.
 Fountain example:
 
 ```bash
-python pointcloud_colmap_run.py \
+python3 pointcloud_colmap_run.py \
   --images-dir TestImages/Fountain \
   --workspace colmap_fountain \
   --k-file TestImages/Fountain/K.txt \
   --matcher sequential \
   --sequential-overlap 5 \
   --use-gpu 0 \
-  --viz-color-rgb \
+  --viz-color-by-error \
+  --viz-max-error 4.0 \
   --export-type TXT \
   --export-csv fountain_points.csv \
   --max-error 4.0 \
@@ -196,7 +146,7 @@ python pointcloud_colmap_run.py \
 If feature extraction gets killed (out of memory), limit image size and threads:
 
 ```bash
-python pointcloud_colmap_run.py \
+python3 pointcloud_colmap_run.py \
   --images-dir TestImages/Fountain \
   --workspace colmap_fountain \
   --k-file TestImages/Fountain/K.txt \
@@ -206,7 +156,8 @@ python pointcloud_colmap_run.py \
   --max-image-size 1600 \
   --num-threads 2 \
   --max-num-features 12000 \
-  --viz-color-rgb \
+  --viz-color-by-error \
+  --viz-max-error 4.0 \
   --export-type TXT \
   --export-csv fountain_points.csv \
   --max-error 4.0 \
@@ -218,14 +169,15 @@ If `colmap` is not on PATH, add `--colmap-bin /path/to/colmap` to the command.
 Statue example:
 
 ```bash
-python pointcloud_colmap_run.py \
+python3 pointcloud_colmap_run.py \
   --images-dir TestImages/Statue \
   --workspace colmap_statue \
   --k-file TestImages/Statue/K.txt \
   --matcher sequential \
   --sequential-overlap 5 \
   --use-gpu 0 \
-  --viz-color-rgb \
+  --viz-color-by-error \
+  --viz-max-error 4.0 \
   --export-type TXT \
   --export-csv statue_points.csv \
   --max-error 4.0 \
@@ -235,7 +187,7 @@ python pointcloud_colmap_run.py \
 Visualize the exported CSV:
 
 ```bash
-python pointcloud_visualize.py \
+python3 pointcloud_visualize.py \
   --input fountain_points.csv \
   --max-error 4.0 \
   --output plots/fountain_colmap.png \
@@ -253,7 +205,7 @@ When `--show` is set, matplotlib provides interactive controls:
 You can also set the initial view with `--elev` and `--azim`, plus `--zoom` and `--pad`:
 
 ```bash
-python pointcloud_visualize.py \
+python3 pointcloud_visualize.py \
   --input fountain_points.csv \
   --color-by-error \
   --elev 20 \
@@ -262,68 +214,13 @@ python pointcloud_visualize.py \
   --show
 ```
 
-## Colored point clouds
-
-Box (use RGB from image A):
-
-```bash
-python pointcloud_run.py \
-  --camera-input TestImages/Box/boxInput.txt \
-  --images-dir TestImages/Box \
-  --output-csv box_points_rgb.csv \
-  --output-dir plots \
-  --write-rgb \
-  --rgb-source img_a \
-  --viz-color-rgb
-```
-
-Entrance (use RGB from image A):
-
-```bash
-python pointcloud_run.py \
-  --camera-input TestImages/Entrance/entranceInput.txt \
-  --images-dir TestImages/Entrance \
-  --output-csv entrance_points_rgb.csv \
-  --output-dir plots \
-  --write-rgb \
-  --rgb-source img_a \
-  --viz-color-rgb \
-  --detail 5
-```
-
-Fountain (COLMAP stores RGB in points3D):
-
-```bash
-python pointcloud_colmap_run.py \
-  --images-dir TestImages/Fountain \
-  --workspace colmap_fountain \
-  --k-file TestImages/Fountain/K.txt \
-  --export-csv fountain_points.csv \
-  --viz-color-rgb
-```
-
-Statue:
-
-```bash
-python pointcloud_colmap_run.py \
-  --images-dir TestImages/Statue \
-  --workspace colmap_statue \
-  --k-file TestImages/Statue/K.txt \
-  --export-csv statue_points.csv \
-  --viz-color-rgb
-```
-
 ## Outputs
 
 - `auto_points.csv` (from `pointcloud_auto.py`)
   - Columns: point_id, x, y, z, avg_error, img_a, img_b, img_a_row, img_a_col,
     img_b_row, img_b_col, angle_deg
-- When `--write-rgb` is set, adds: r, g, b
 - `manual_points.csv` (from `pointcloud_manual.py`)
   - Columns: point_id, x, y, z, avg_error
-- `auto_v2_points.csv` (from `pointcloud_auto_v2.py`)
-  - Columns: point_id, x, y, z, avg_error, img_a, img_b, disparity
-- COLMAP CSV exports include: r, g, b
 - Plots (from `pointcloud_run.py`)
   - Saved as `plots/<csv_stem>_plot_###.png` without overwriting
 
@@ -332,7 +229,6 @@ python pointcloud_colmap_run.py \
 - pointcloud_utils.py: parsing + ray math
 - pointcloud_manual.py: manual point triangulation
 - pointcloud_auto.py: automatic SIFT matching + 2-view triangulation
-- pointcloud_auto_v2.py: dense stereo (SGBM) reconstruction
 - pointcloud_colmap_run.py: COLMAP + visualization runner
 - pointcloud_visualize.py: 3D scatter plot visualizer
 - pointcloud_run.py: one-command pipeline (triangulate + plot)

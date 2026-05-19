@@ -58,21 +58,20 @@ def export_points_to_csv(points_path, output_csv, max_error, min_track_len):
                 continue
             point_id = int(parts[0])
             x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
-            r, g, b = float(parts[4]), float(parts[5]), float(parts[6])
             error = float(parts[7])
             track_len = max(0, (len(parts) - 8) // 2)
             if max_error is not None and error > max_error:
                 continue
             if min_track_len is not None and track_len < min_track_len:
                 continue
-            rows.append([point_id, x, y, z, error, track_len, r, g, b])
+            rows.append([point_id, x, y, z, error, track_len])
 
     if not rows:
         raise SystemExit("No points left after filtering")
 
     with open(output_csv, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["point_id", "x", "y", "z", "avg_error", "track_len", "r", "g", "b"])
+        writer.writerow(["point_id", "x", "y", "z", "avg_error", "track_len"])
         writer.writerows(rows)
 
     print(f"Wrote {len(rows)} points to {output_csv}")

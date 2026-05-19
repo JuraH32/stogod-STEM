@@ -26,22 +26,6 @@ def load_gray_image(path):
     return image
 
 
-def load_color_image(path):
-    image = cv2.imread(path, cv2.IMREAD_COLOR)
-    if image is None:
-        raise SystemExit(f"Failed to read image: {path}")
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-
-def sample_color(image, row, col):
-    height, width = image.shape[:2]
-    r = int(round(row))
-    c = int(round(col))
-    r = max(0, min(height - 1, r))
-    c = max(0, min(width - 1, c))
-    return image[r, c]
-
-
 def ratio_matches(matches, ratio):
     good = []
     for m, n in matches:
@@ -113,13 +97,6 @@ def main():
         default=0,
         help="Limit matches per image pair (0 = no limit)",
     )
-    parser.add_argument("--write-rgb", action="store_true", help="Append r,g,b columns")
-    parser.add_argument(
-        "--rgb-source",
-        choices=["img_a", "img_b", "avg"],
-        default="img_a",
-        help="Which image to sample for r,g,b",
-    )
     parser.add_argument("--output", default="auto_points.csv", help="Output CSV file")
     args = parser.parse_args()
 
@@ -154,7 +131,6 @@ def main():
         for image_id in image_ids
     ]
     images = [load_gray_image(path) for path in image_paths]
-    color_images = [load_color_image(path) for path in image_paths] if args.write_rgb else None
 
     sift = sift_or_die()
     keypoints = []
@@ -218,55 +194,42 @@ def main():
             if avg_error > max_error:
                 continue
 
-            row = [
-                point_id,
-                point[0],
-                point[1],
-                point[2],
-                avg_error,
-                image_id_a,
-                image_id_b,
-                row_a,
-                col_a,
-                row_b,
-                col_b,
-                angle_deg,
-            ]
-
-            if args.write_rgb:
-                color_a = sample_color(color_images[idx_a], row_a, col_a)
-                color_b = sample_color(color_images[idx_b], row_b, col_b)
-                if args.rgb_source == "img_b":
-                    color = color_b
-                elif args.rgb_source == "avg":
-                    color = (color_a.astype(float) + color_b.astype(float)) / 2.0
-                else:
-                    color = color_a
-                r, g, b = [int(max(0, min(255, round(float(v))))) for v in color]
-                row.extend([r, g, b])
-
-            rows.append(row)
+            rows.append(
+                [
+                    point_id,
+                    point[0],
+                    point[1],
+                    point[2],
+                    avg_error,
+                    image_id_a,
+                    image_id_b,
+                    row_a,
+                    col_a,
+                    row_b,
+                    col_b,
+                    angle_deg,
+                ]
+            )
             point_id += 1
 
     with open(args.output, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        header = [
-            "point_id",
-            "x",
-            "y",
-            "z",
-            "avg_error",
-            "img_a",
-            "img_b",
-            "img_a_row",
-            "img_a_col",
-            "img_b_row",
-            "img_b_col",
-            "angle_deg",
-        ]
-        if args.write_rgb:
-            header.extend(["r", "g", "b"])
-        writer.writerow(header)
+        writer.writerow(
+            [
+                "point_id",
+                "x",
+                "y",
+                "z",
+                "avg_error",
+                "img_a",
+                "img_b",
+                "img_a_row",
+                "img_a_col",
+                "img_b_row",
+                "img_b_col",
+                "angle_deg",
+            ]
+        )
         writer.writerows(rows)
 
     print(f"Processed {total_pairs} image pairs")

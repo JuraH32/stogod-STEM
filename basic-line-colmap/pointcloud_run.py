@@ -50,13 +50,6 @@ def main():
         default=0,
         help="Limit matches per image pair (0 = no limit)",
     )
-    parser.add_argument("--write-rgb", action="store_true", help="Append r,g,b columns")
-    parser.add_argument(
-        "--rgb-source",
-        choices=["img_a", "img_b", "avg"],
-        default="img_a",
-        help="Which image to sample for r,g,b",
-    )
 
     parser.add_argument("--v2-fov-deg", type=float, default=90.0, help="V2 horizontal FOV")
     parser.add_argument("--v2-downscale", type=int, default=1, help="V2 downscale factor")
@@ -85,19 +78,13 @@ def main():
     parser.add_argument("--viz-max-error", type=float, default=2.0, help="Filter points by avg_error")
     parser.add_argument("--viz-color-by-error", action="store_true", help="Color points by avg_error")
     parser.add_argument("--viz-color-field", default=None, help="Color points by CSV column")
-    parser.add_argument("--viz-color-rgb", action="store_true", help="Color points by r,g,b")
     parser.add_argument("--viz-color-label", default=None, help="Colorbar label override")
     parser.add_argument("--viz-zoom", type=float, default=1.2, help="Zoom factor")
     parser.add_argument("--viz-pad", type=float, default=0.02, help="Padding fraction")
     parser.add_argument("--viz-point-size", type=float, default=10.0, help="Marker size")
     parser.add_argument("--viz-figsize", default="12,9", help="Figure size W,H")
     parser.add_argument("--viz-dpi", type=int, default=160, help="Figure/output DPI")
-    parser.add_argument("--viz-elev", type=float, default=None, help="Initial elevation angle")
-    parser.add_argument("--viz-azim", type=float, default=None, help="Initial azimuth angle")
     args = parser.parse_args()
-
-    if args.mode == "v2" and args.write_rgb:
-        raise SystemExit("RGB output is only supported in auto mode")
 
     # Run triangulation to produce the CSV.
     if args.mode == "auto":
@@ -133,9 +120,6 @@ def main():
             auto_cmd.extend([str(i) for i in args.images])
         if args.image_prefix:
             auto_cmd.extend(["--image-prefix", args.image_prefix])
-        if args.write_rgb:
-            auto_cmd.append("--write-rgb")
-            auto_cmd.extend(["--rgb-source", args.rgb_source])
 
         subprocess.run(auto_cmd, check=True)
     else:
@@ -236,18 +220,12 @@ def main():
 
     if args.viz_color_by_error:
         viz_cmd.append("--color-by-error")
-    if args.viz_color_rgb:
-        viz_cmd.append("--color-rgb")
     if args.viz_color_field:
         viz_cmd.extend(["--color-field", args.viz_color_field])
     if args.viz_color_label:
         viz_cmd.extend(["--color-label", args.viz_color_label])
     if args.viz_max_error is not None:
         viz_cmd.extend(["--max-error", str(args.viz_max_error)])
-    if args.viz_elev is not None:
-        viz_cmd.extend(["--elev", str(args.viz_elev)])
-    if args.viz_azim is not None:
-        viz_cmd.extend(["--azim", str(args.viz_azim)])
 
     subprocess.run(viz_cmd, check=True)
     print(f"Saved plot to {plot_path}")

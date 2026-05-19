@@ -49,7 +49,6 @@ def main():
     parser.add_argument("--viz-max-error", type=float, default=None)
     parser.add_argument("--viz-color-by-error", action="store_true")
     parser.add_argument("--viz-color-field", default=None)
-    parser.add_argument("--viz-color-rgb", action="store_true")
     parser.add_argument("--viz-color-label", default=None)
     parser.add_argument("--viz-zoom", type=float, default=1.2)
     parser.add_argument("--viz-pad", type=float, default=0.02)
@@ -129,8 +128,6 @@ def main():
     ]
     if args.viz_color_by_error:
         viz_cmd.append("--color-by-error")
-    if args.viz_color_rgb:
-        viz_cmd.append("--color-rgb")
     if args.viz_color_field:
         viz_cmd.extend(["--color-field", args.viz_color_field])
     if args.viz_color_label:
