@@ -223,3 +223,5 @@ StemGames2026_ProjectTask/reports/generated/*
 *.obj
 outputs_lean
 *.zip
+Project Task Report*
+*.png
