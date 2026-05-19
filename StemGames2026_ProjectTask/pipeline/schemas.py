@@ -49,3 +49,8 @@ class SceneResult:
     source_view_index: np.ndarray  # (M,) int32 — index into per_view list
     source_pixel: np.ndarray       # (M, 2) int32 — (row, col) in that view's image
     scene_ply_path: Path | None = None
+    scene_mesh_path: Path | None = None
+    scene_mesh_vertex_count: int | None = None
+    scene_mesh_face_count: int | None = None
+    scene_mesh_backend: str | None = None
+    mesh_warning: str | None = None

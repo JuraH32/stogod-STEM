@@ -12,6 +12,7 @@ Outputs are written to outputs/{scene_name}/:
     per_image_clouds/    {stem}.ply per image (world-space)
     pixel_maps/          {stem}_pixel_map.npy per image
     scene_cloud.ply      merged scene point cloud
+    scene_mesh.ply       best-effort triangle mesh generated from the scene cloud
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ if str(_REPO_ROOT) not in sys.path:
 from StemGames2026_ProjectTask.pointcloud.loaders import load_project_scenes
 from StemGames2026_ProjectTask.pipeline.depth.moge2 import MoGe2DepthEstimator
 from StemGames2026_ProjectTask.pipeline.fusion.depth_fuser import DepthFuser
+from StemGames2026_ProjectTask.pipeline.mesh import TrimeshVoxelMesher
 from StemGames2026_ProjectTask.pipeline.pose.ground_truth import GroundTruthPoseProvider
 from StemGames2026_ProjectTask.pipeline.pose.colmap_pose import ColmapPoseProvider
 from StemGames2026_ProjectTask.pipeline.postprocess.statistical import StatisticalPostProcessor
@@ -53,6 +55,7 @@ def build_config(
     # Statistical post-processing removes depth outliers instead.
     fuser = DepthFuser(voxel_size=voxel_size, min_depth=0.0, max_depth=1e9)
     post_processor = StatisticalPostProcessor(nb_neighbors=nb_neighbors, std_ratio=std_ratio)
+    mesher = TrimeshVoxelMesher(pitch=max(voxel_size, 1e-4))
 
     if scene_name in POSED_SCENES:
         return PipelineConfig(
@@ -61,6 +64,7 @@ def build_config(
             depth_estimator=depth_estimator,
             fuser=fuser,
             post_processor=post_processor,
+            mesher=mesher,
             reconstructor=None,
         )
     else:
@@ -73,6 +77,7 @@ def build_config(
             depth_estimator=depth_estimator,
             fuser=fuser,
             post_processor=post_processor,
+            mesher=mesher,
             reconstructor=ColmapReconstructor(pose_provider=provider),
         )
 
@@ -130,7 +135,11 @@ def main() -> None:
         result = runner.run_scene(dataset)
 
         print(f"\n  Done: {len(result.scene_points):,} points in scene cloud")
-        print(f"  Output: {result.scene_ply_path}")
+        print(f"  Output cloud: {result.scene_ply_path}")
+        if result.scene_mesh_path is not None:
+            print(f"  Output mesh:  {result.scene_mesh_path}")
+        elif result.mesh_warning is not None:
+            print(f"  Output mesh:  skipped ({result.mesh_warning})")
 
 
 if __name__ == "__main__":
