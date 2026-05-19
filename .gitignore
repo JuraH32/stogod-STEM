@@ -220,3 +220,4 @@ __marimo__/
 StemGames2026_ProjectTask/TestImages
 StemGames2026_ProjectTask/outputs/*
 StemGames2026_ProjectTask/reports/generated/*
+*.obj

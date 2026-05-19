@@ -11,6 +11,7 @@ from StemGames2026_ProjectTask.pointcloud.schemas import SceneDataset, SceneView
 
 from StemGames2026_ProjectTask.pipeline import coords
 from StemGames2026_ProjectTask.pipeline.io import depth_writer, pixel_map as pixel_map_io, ply_writer
+from StemGames2026_ProjectTask.pipeline.mesh.base import SceneMesher
 from StemGames2026_ProjectTask.pipeline.schemas import EstimatedPose, PerViewResult, SceneResult
 from StemGames2026_ProjectTask.pipeline.depth.base import DepthEstimator
 from StemGames2026_ProjectTask.pipeline.fusion.base import Fuser
@@ -26,6 +27,7 @@ class PipelineConfig:
     depth_estimator: DepthEstimator
     fuser: Fuser
     post_processor: PostProcessor
+    mesher: SceneMesher | None = None
     reconstructor: SceneReconstructor | None = None  # None for posed datasets
 
 
@@ -145,6 +147,26 @@ class PipelineRunner:
         ply_writer.write_ply(scene_result.scene_ply_path, pts, cols)
 
         print(f"  [{dataset.scene_name}] scene cloud: {len(pts):,} points → {scene_result.scene_ply_path}")
+
+        # Stage 6 (optional): best-effort surface mesh generation
+        if self._cfg.mesher is not None:
+            mesh_path = out_dir / "scene_mesh.ply"
+            try:
+                mesh_result = self._cfg.mesher.mesh(dataset.scene_name, pts, cols, mesh_path)
+            except Exception as exc:
+                scene_result.mesh_warning = str(exc)
+                print(f"  [{dataset.scene_name}] scene mesh skipped: {exc}")
+            else:
+                scene_result.scene_mesh_path = mesh_result.mesh_path
+                scene_result.scene_mesh_vertex_count = mesh_result.vertex_count
+                scene_result.scene_mesh_face_count = mesh_result.face_count
+                scene_result.scene_mesh_backend = mesh_result.backend
+                print(
+                    f"  [{dataset.scene_name}] scene mesh: "
+                    f"{mesh_result.vertex_count:,} vertices, {mesh_result.face_count:,} faces "
+                    f"→ {mesh_result.mesh_path}"
+                )
+
         return scene_result
 
     def run_all(self, project_root: Path) -> dict[str, SceneResult]:
