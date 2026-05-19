@@ -22,21 +22,21 @@ if str(_REPO_ROOT) not in sys.path:
 
 from StemGames2026_ProjectTask.visualize import MAX_POINTS_PER_TRACE, read_ply, rgb_to_hex, subsample
 
-OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
+DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
 
 
-def available_scenes() -> list[str]:
-    if not OUTPUT_ROOT.exists():
+def available_scenes(output_root: Path) -> list[str]:
+    if not output_root.exists():
         return []
-    return [path.name for path in sorted(OUTPUT_ROOT.iterdir()) if path.is_dir() and path.name != "colmap"]
+    return [path.name for path in sorted(output_root.iterdir()) if path.is_dir() and path.name != "colmap"]
 
 
-def scene_mesh(scene: str) -> Path:
-    return OUTPUT_ROOT / scene / "scene_mesh.ply"
+def scene_mesh(output_root: Path, scene: str) -> Path:
+    return output_root / scene / "scene_mesh.ply"
 
 
-def scene_cloud(scene: str) -> Path:
-    return OUTPUT_ROOT / scene / "scene_cloud.ply"
+def scene_cloud(output_root: Path, scene: str) -> Path:
+    return output_root / scene / "scene_cloud.ply"
 
 
 def _make_scene_layout(title: str):
@@ -61,11 +61,11 @@ def _open_figure(fig, name: str) -> None:
     webbrowser.open(f"file://{tmp.name}")
 
 
-def show_mesh(scene: str, opacity: float, show_cloud: bool, cloud_max_points: int) -> None:
+def show_mesh(scene: str, output_root: Path, opacity: float, show_cloud: bool, cloud_max_points: int) -> None:
     import plotly.graph_objects as go
     import trimesh
 
-    mesh_path = scene_mesh(scene)
+    mesh_path = scene_mesh(output_root, scene)
     if not mesh_path.exists():
         print(f"No scene mesh found at {mesh_path}. Run run_meshing.py or run_pipeline.py first.")
         return
@@ -96,7 +96,7 @@ def show_mesh(scene: str, opacity: float, show_cloud: bool, cloud_max_points: in
     traces = [go.Mesh3d(**mesh_kwargs)]
 
     if show_cloud:
-        cloud_path = scene_cloud(scene)
+        cloud_path = scene_cloud(output_root, scene)
         if cloud_path.exists():
             points, colors = read_ply(cloud_path)
             pts, cols = subsample(points, colors, cloud_max_points)
@@ -125,16 +125,21 @@ def main() -> None:
         "--cloud-max-points", type=int, default=MAX_POINTS_PER_TRACE // 4,
         help="Maximum number of point-cloud samples when --show-cloud is used"
     )
+    parser.add_argument(
+        "--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT,
+        help="Output directory to visualize from (default: StemGames2026_ProjectTask/outputs)"
+    )
     args = parser.parse_args()
+    output_root = Path(args.output_root)
 
     if args.list:
-        scenes = available_scenes()
+        scenes = available_scenes(output_root)
         if not scenes:
-            print("No outputs found.")
+            print(f"No outputs found under {output_root}.")
             return
         for scene in scenes:
-            mesh_path = scene_mesh(scene)
-            cloud_path = scene_cloud(scene)
+            mesh_path = scene_mesh(output_root, scene)
+            cloud_path = scene_cloud(output_root, scene)
             print(f"\n{scene}:")
             print(f"  scene_cloud.ply  {'✓' if cloud_path.exists() else '✗'}")
             print(f"  scene_mesh.ply   {'✓' if mesh_path.exists() else '✗'}")
@@ -146,6 +151,7 @@ def main() -> None:
 
     show_mesh(
         scene=args.scene,
+        output_root=output_root,
         opacity=args.opacity,
         show_cloud=args.show_cloud,
         cloud_max_points=args.cloud_max_points,

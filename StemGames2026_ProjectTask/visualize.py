@@ -26,7 +26,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
+DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parent / "outputs"
 
 # Maximum points to show in a single Plotly trace (keeps browser responsive)
 MAX_POINTS_PER_TRACE = 200_000
@@ -180,8 +180,8 @@ def _open_figure(fig, name: str) -> None:
 # Depth map grid
 # ---------------------------------------------------------------------------
 
-def show_depth_grid(scene: str) -> None:
-    depth_dir = OUTPUT_ROOT / scene / "depth_maps"
+def show_depth_grid(scene: str, output_root: Path) -> None:
+    depth_dir = output_root / scene / "depth_maps"
     pngs = sorted(depth_dir.glob("*_depth.png"))
     if not pngs:
         print(f"No depth PNGs found in {depth_dir}")
@@ -215,19 +215,19 @@ def show_depth_grid(scene: str) -> None:
 # Discovery helpers
 # ---------------------------------------------------------------------------
 
-def available_scenes() -> list[str]:
-    if not OUTPUT_ROOT.exists():
+def available_scenes(output_root: Path) -> list[str]:
+    if not output_root.exists():
         return []
-    return [d.name for d in sorted(OUTPUT_ROOT.iterdir()) if d.is_dir()]
+    return [d.name for d in sorted(output_root.iterdir()) if d.is_dir()]
 
 
-def per_image_plys(scene: str) -> list[Path]:
-    cloud_dir = OUTPUT_ROOT / scene / "per_image_clouds"
+def per_image_plys(output_root: Path, scene: str) -> list[Path]:
+    cloud_dir = output_root / scene / "per_image_clouds"
     return sorted(cloud_dir.glob("*.ply")) if cloud_dir.exists() else []
 
 
-def scene_ply(scene: str) -> Path:
-    return OUTPUT_ROOT / scene / "scene_cloud.ply"
+def scene_ply(output_root: Path, scene: str) -> Path:
+    return output_root / scene / "scene_cloud.ply"
 
 
 # ---------------------------------------------------------------------------
@@ -249,18 +249,23 @@ def main() -> None:
                         help="Side-by-side comparison of two per-image clouds")
     parser.add_argument("--max-points", type=int, default=MAX_POINTS_PER_TRACE,
                         help=f"Max points per trace (default {MAX_POINTS_PER_TRACE:,})")
+    parser.add_argument(
+        "--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT,
+        help="Output directory to visualize from (default: StemGames2026_ProjectTask/outputs)"
+    )
     args = parser.parse_args()
 
     max_pts = args.max_points
+    output_root = Path(args.output_root)
 
     if args.list:
-        scenes = available_scenes()
+        scenes = available_scenes(output_root)
         if not scenes:
-            print("No outputs found. Run run_pipeline.py first.")
+            print(f"No outputs found under {output_root}. Run run_pipeline.py first.")
             return
         for s in scenes:
-            plys = per_image_plys(s)
-            sc = scene_ply(s)
+            plys = per_image_plys(output_root, s)
+            sc = scene_ply(output_root, s)
             print(f"\n{s}:")
             print(f"  scene_cloud.ply  {'✓' if sc.exists() else '✗'}  ({sc.stat().st_size // 1024 // 1024} MB)" if sc.exists() else "  scene_cloud.ply  ✗")
             print(f"  per-image clouds: {len(plys)} files")
@@ -273,11 +278,11 @@ def main() -> None:
     scene = args.scene
 
     if args.depth:
-        show_depth_grid(scene)
+        show_depth_grid(scene, output_root)
         return
 
     if args.image is not None:
-        plys = per_image_plys(scene)
+        plys = per_image_plys(output_root, scene)
         matches = [p for p in plys if f"{args.image}" in p.stem]
         if not matches:
             # Try to match by index position
@@ -294,7 +299,7 @@ def main() -> None:
 
     if args.compare:
         a_idx, b_idx = args.compare
-        plys = per_image_plys(scene)
+        plys = per_image_plys(output_root, scene)
         def _get(n):
             matches = [p for p in plys if p.stem.endswith(str(n))]
             return matches[0] if matches else (plys[n - 1] if 1 <= n <= len(plys) else None)
@@ -307,7 +312,7 @@ def main() -> None:
         return
 
     if args.all_images:
-        plys = per_image_plys(scene)
+        plys = per_image_plys(output_root, scene)
         if not plys:
             print(f"No per-image clouds found for {scene}.")
             return
@@ -317,7 +322,7 @@ def main() -> None:
         return
 
     # Default: show scene cloud
-    sc = scene_ply(scene)
+    sc = scene_ply(output_root, scene)
     if not sc.exists():
         print(f"No scene cloud found at {sc}. Run run_pipeline.py --scenes {scene} first.")
         return

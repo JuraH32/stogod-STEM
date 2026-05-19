@@ -252,6 +252,54 @@ Adjust mesh opacity:
 
 The viewer writes a temporary HTML file and opens it in the browser.
 
+## Visualize From `outputs_lean`
+
+If you create a reduced output directory such as `outputs_lean/`, you can point the visualizers at it directly.
+
+This is useful when you want to keep only the whole-scene artifacts and delete the heavy intermediate folders.
+
+For whole-scene viewing from `outputs_lean`, the minimum useful files are:
+
+- `outputs_lean/Box/scene_mesh.ply`
+- `outputs_lean/Entrance/scene_mesh.ply`
+- `outputs_lean/Fountain/scene_mesh.ply`
+- `outputs_lean/Statue/scene_mesh.ply`
+
+If you also want point-cloud viewing or mesh-plus-cloud overlay, keep these too:
+
+- `outputs_lean/Box/scene_cloud.ply`
+- `outputs_lean/Entrance/scene_cloud.ply`
+- `outputs_lean/Fountain/scene_cloud.ply`
+- `outputs_lean/Statue/scene_cloud.ply`
+
+Point the visualizers at that directory with `--output-root`.
+
+List available whole-scene outputs in `outputs_lean`:
+
+```bash
+.venv/bin/python StemGames2026_ProjectTask/visualize_mesh.py --output-root StemGames2026_ProjectTask/outputs_lean --list
+```
+
+Open a mesh from `outputs_lean`:
+
+```bash
+.venv/bin/python StemGames2026_ProjectTask/visualize_mesh.py Fountain --output-root StemGames2026_ProjectTask/outputs_lean
+```
+
+Open a mesh and overlay the scene cloud from `outputs_lean`:
+
+```bash
+.venv/bin/python StemGames2026_ProjectTask/visualize_mesh.py Fountain --output-root StemGames2026_ProjectTask/outputs_lean --show-cloud
+```
+
+Open the whole-scene point cloud from `outputs_lean`:
+
+```bash
+.venv/bin/python StemGames2026_ProjectTask/visualize.py Fountain --output-root StemGames2026_ProjectTask/outputs_lean
+```
+
+If `outputs_lean` only contains meshes, use `visualize_mesh.py`. `visualize.py` needs `scene_cloud.ply`, and features like `--all-images`, `--image`, `--compare`, and `--depth` still require the larger intermediate output folders.
+
 ## COLMAP-Only Reconstruction Utility
 
 `reconstruct.py` is a separate utility for portable PyCOLMAP reconstruction. It is useful when you want to inspect the COLMAP path independently from the MoGe-based point-cloud pipeline.
